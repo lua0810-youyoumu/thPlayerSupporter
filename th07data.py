@@ -52,6 +52,15 @@ CHERRY_MAX_OFFSET = 0x9618
 CHERRY_OFFSET = 0x961C
 CHERRY_PLUS_OFFSET = 0x9620
 
+# 被弾数アクセス用
+MISS_COUNT_OFFSET = 0x50
+
+# ボム使用数アクセス用
+BOMB_USED_OFFSET = 0x6C
+
+# 現在スコアアクセス用
+TRUE_SCORE_OFFSET = 0x04
+
 # プリズムリバー判定用
 ECL_MANAGER = 0x01347938
 PRISM_OFFSET = 0x4F08
@@ -93,7 +102,7 @@ class StageData:
 
 @dataclass(frozen=True)
 class BossData:
-    lifes: Dict,
+    lifes: Dict
     spellnames: Dict
 
 CHIRNO_DATA = BossData(

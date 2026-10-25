@@ -26,7 +26,7 @@ RECONNECT_INTERVAL = 1.0         # 秒
 MAX_CONSECUTIVE_ERRORS = 50      # これ以上連続で読めなかったら再アタッチ
 
 HEADER = ["DateTime", "frame1", "frame2", "difficulty", "stage",
-          "cherry", "cherry_max", "cherry_plus", "place", "phase"]
+          "cherry", "cherry_max", "cherry_plus", "place", "phase", 'miss', 'bomb', 'score']
 
 READ_ERRORS = (pymem.exception.WinAPIError, pymem.exception.MemoryReadError)
 
@@ -58,7 +58,7 @@ def render(s: GameState, p1, p2) -> str:
     return (
         f"frame:{s.current_time}\nStage:{s.stage}\n"
         f"cherry:{s.cherry}\ncherryMax:{s.cherry_max}\ncherry+:{s.cherry_plus}\n"
-        f"{p1}\n{p2}\n{s.life}"
+        f"{p1}\n{p2}\nmiss:{s.life}\nbomb:{s.bomb_used}\nscore:{s.score*10}"
     )
 
 
@@ -69,6 +69,7 @@ def main() -> None:
 
     log_file, writer = open_log(LOG_PATH)
     errors = 0
+    previous = None
     try:
         while True:
             try:
@@ -89,13 +90,18 @@ def main() -> None:
                           s.character, s.prism, *s.hangoncho) or ("UNKNOWN", "")
 
             print("\033[H\033[J" + render(s, p1, p2), flush=True)
-
-            writer.writerow([
-                datetime.datetime.now().strftime("%Y/%m/%d %H:%M:%S.%f"),
-                s.current_time, s.frame, s.difficulty, s.stage,
-                s.cherry, s.cherry_max, s.cherry_plus, p1, p2,
-            ])
-            log_file.flush()
+            
+            # 前の状態と比較して同じであれば記録は残さない
+            # ポーズ放置の対策
+            if previous != s:
+                writer.writerow([
+                    datetime.datetime.now().strftime("%Y/%m/%d %H:%M:%S.%f"),
+                    s.current_time, s.frame, s.difficulty, s.stage,
+                    s.cherry, s.cherry_max, s.cherry_plus, p1, p2,
+                    s.miss_count, s.bomb_used, s.score
+                ])
+                log_file.flush()
+                previous = s
 
             time.sleep(POLL_INTERVAL)
     except KeyboardInterrupt:

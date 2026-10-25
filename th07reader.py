@@ -29,6 +29,9 @@ class GameState:
     cherry_plus: int
     prism: str | None
     hangoncho: tuple
+    miss_count: int
+    bomb_used: int
+    score: int
 
 
 class TH07Reader:
@@ -63,6 +66,27 @@ class TH07Reader:
             + d.ECL_TIMER_CURRENT_OFFSET
         )
         return self.pm.read_int(address)
+    
+    def miss_count(self):
+        """
+        被弾数カウント
+        """
+        globals_address = self.pm.read_uint(d.GAME_MANAGER + d.GLOBALS_POINTER_OFFSET)
+        return self.pm.read_float(globals_address + d.MISS_COUNT_OFFSET)
+    
+    def bomb_used_count(self):
+        """
+        ボム使用数カウント
+        """
+        globals_address = self.pm.read_uint(d.GAME_MANAGER + d.GLOBALS_POINTER_OFFSET)
+        return self.pm.read_float(globals_address + d.BOMB_USED_OFFSET)
+    
+    def score(self):
+        """
+        現在スコア
+        """
+        globals_address = self.pm.read_uint(d.GAME_MANAGER + d.GLOBALS_POINTER_OFFSET)
+        return self.pm.read_int(globals_address + d.TRUE_SCORE_OFFSET)
 
     # --- ボス ---
     def phase(self) -> int:
@@ -117,4 +141,7 @@ class TH07Reader:
             cherry_plus=cherry_plus,
             prism=self.prism_river(ecl_base),
             hangoncho=self.hangoncho_flags(ecl_base),
+            miss_count=self.miss_count(),
+            bomb_used=self.bomb_used_count(),
+            score=self.score()
         )
