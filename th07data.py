@@ -61,6 +61,26 @@ BOMB_USED_OFFSET = 0x6C
 # 現在スコアアクセス用
 TRUE_SCORE_OFFSET = 0x04
 
+# タイトルメニュー状態アクセス用
+CHAIN_CALC = 0x626218          # Chain.calcChain(リストの先頭)
+TITLE_ON_UPDATE = 0x4554d6     # TitleScreen の更新コールバック
+
+OFF_CALLBACK = 0x04
+OFF_NEXT = 0x14
+OFF_ARG = 0x1C
+
+OFF_CURRENT_SCREEN = 0xD0F8
+OFF_FRAMES_IN_MENU = 0xD0FC
+OFF_DEMO_TIMER = 0xD100
+
+SCREEN_NAMES = {
+    0: "MainMenu", 1: "NewName", 2: "Option", 3: "KeyConfig",
+    4: "Difficulty", 5: "Character", 6: "Shot", 7: "Replay",
+    8: "DifficultyPractice", 9: "CharacterPractice", 10: "ShotPractice",
+    11: "PracticeStageSelect", 12: "DifficultyExtra",
+    13: "CharacterExtra", 14: "ShotExtra",
+}
+
 # プリズムリバー判定用
 ECL_MANAGER = 0x01347938
 PRISM_OFFSET = 0x4F08

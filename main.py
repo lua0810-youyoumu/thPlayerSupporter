@@ -26,7 +26,7 @@ RECONNECT_INTERVAL = 1.0         # 秒
 MAX_CONSECUTIVE_ERRORS = 50      # これ以上連続で読めなかったら再アタッチ
 
 HEADER = ["DateTime", "frame1", "frame2", "difficulty", "stage",
-          "cherry", "cherry_max", "cherry_plus", "place", "phase", 'miss', 'bomb', 'score']
+          "cherry", "cherry_max", "cherry_plus", "place", "phase", 'miss', 'bomb', 'score', 'mode']
 
 READ_ERRORS = (pymem.exception.WinAPIError, pymem.exception.MemoryReadError)
 
@@ -54,11 +54,11 @@ def open_log(path: Path):
     return f, writer
 
 
-def render(s: GameState, p1, p2) -> str:
+def render(s: GameState, p1, p2, mode) -> str:
     return (
         f"frame:{s.current_time}\nStage:{s.stage}\n"
         f"cherry:{s.cherry}\ncherryMax:{s.cherry_max}\ncherry+:{s.cherry_plus}\n"
-        f"{p1}\n{p2}\nmiss:{s.life}\nbomb:{s.bomb_used}\nscore:{s.score*10}"
+        f"{p1}\n{p2}\nmiss:{s.life}\nbomb:{s.bomb_used}\nscore:{s.score*10}\n{mode}"
     )
 
 
@@ -85,23 +85,33 @@ def main() -> None:
                 continue
             errors = 0
 
-            # th07() は対象外の状態(タイトル画面・ステージ0など)だと None を返す
-            p1, p2 = th07(s.difficulty, s.stage, s.current_time, s.phase, s.life,
-                          s.character, s.prism, *s.hangoncho) or ("UNKNOWN", "")
+            if s.title_menu_now in [None, '?']: #new gameもしくはプラクティス中
+                if s.title_menu_before == "PracticeStageSelect":
+                    mode = "Practice"
+                elif s.title_menu_before == "Shot":
+                    mode = 'NewGame'
+                else:
+                    mode = ''
+                
+                # th07() は対象外の状態(タイトル画面・ステージ0など)だと None を返す
+                p1, p2 = th07(s.difficulty, s.stage, s.current_time, s.phase, s.life,
+                              s.character, s.prism, *s.hangoncho) or ("UNKNOWN", "")
 
-            print("\033[H\033[J" + render(s, p1, p2), flush=True)
-            
-            # 前の状態と比較して同じであれば記録は残さない
-            # ポーズ放置の対策
-            if previous != s:
-                writer.writerow([
-                    datetime.datetime.now().strftime("%Y/%m/%d %H:%M:%S.%f"),
-                    s.current_time, s.frame, s.difficulty, s.stage,
-                    s.cherry, s.cherry_max, s.cherry_plus, p1, p2,
-                    s.miss_count, s.bomb_used, s.score
-                ])
-                log_file.flush()
-                previous = s
+                print("\033[H\033[J" + render(s, p1, p2, mode), flush=True)
+
+                # 前の状態と比較して同じであれば記録は残さない
+                # ポーズ放置の対策
+                if previous != s:
+                    writer.writerow([
+                        datetime.datetime.now().strftime("%Y/%m/%d %H:%M:%S.%f"),
+                        s.current_time, s.frame, s.difficulty, s.stage,
+                        s.cherry, s.cherry_max, s.cherry_plus, p1, p2,
+                        s.miss_count, s.bomb_used, s.score, mode
+                    ])
+                    log_file.flush()
+                    previous = s
+            else:
+                print(f"\033[H\033[J{s.title_menu_now}", flush=True)
 
             time.sleep(POLL_INTERVAL)
     except KeyboardInterrupt:

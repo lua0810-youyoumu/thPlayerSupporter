@@ -32,11 +32,15 @@ class GameState:
     miss_count: int
     bomb_used: int
     score: int
-
+    title_menu_now: str
+    title_menu_before: str
 
 class TH07Reader:
     def __init__(self, pm: pymem.Pymem):
         self.pm = pm
+        self.ts = self.find_title_screen()
+        self.title_menu_before = None
+        self.title_menu_now = self.read_title_state()
 
     # --- 基本情報 ---
     def difficulty(self) -> str:
@@ -108,6 +112,31 @@ class TH07Reader:
         cherry = read(d.GAME_MANAGER + d.CHERRY_OFFSET)
         cherry_plus = read(d.GAME_MANAGER + d.CHERRY_PLUS_OFFSET)
         return cherry_max - cherry_base, cherry - cherry_base, cherry_plus - cherry_base
+    
+    def read_title_state(self):
+        if self.ts is None:
+            return None  # タイトル画面ではない(と思われる)
+        cur = self.pm.read_int(self.ts + d.OFF_CURRENT_SCREEN)
+        return d.SCREEN_NAMES.get(cur, "?")
+    
+    def find_title_screen(self, max_nodes=256):
+        """チェーンをたどり TitleScreen のアドレスを返す。なければ None。"""
+        cur = d.CHAIN_CALC
+        seen = set()
+        for _ in range(max_nodes):
+            if cur == 0 or cur in seen:
+                return None
+            seen.add(cur)
+            callback = self.pm.read_uint(cur + d.OFF_CALLBACK)
+            if callback == d.TITLE_ON_UPDATE:
+                return self.pm.read_uint(cur + d.OFF_ARG)
+            cur = self.pm.read_uint(cur + d.OFF_NEXT)
+        return None
+    
+    def set_title_menu_state(self):
+        if self.title_menu_now != self.read_title_state():
+            self.title_menu_before = self.title_menu_now
+        self.title_menu_now = self.read_title_state()
 
     # --- ECL_MANAGER 経由 ---
     def _ecl_base(self) -> int:
@@ -128,6 +157,8 @@ class TH07Reader:
     def snapshot(self) -> GameState:
         ecl_base = self._ecl_base()
         cherry_max, cherry, cherry_plus = self.cherry()
+        self.set_title_menu_state()
+        
         return GameState(
             difficulty=self.difficulty(),
             character=self.character(),
@@ -143,5 +174,7 @@ class TH07Reader:
             hangoncho=self.hangoncho_flags(ecl_base),
             miss_count=self.miss_count(),
             bomb_used=self.bomb_used_count(),
-            score=self.score()
+            score=self.score(),
+            title_menu_now=self.title_menu_now,
+            title_menu_before=self.title_menu_before
         )
