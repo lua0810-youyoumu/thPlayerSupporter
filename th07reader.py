@@ -14,6 +14,7 @@ import pymem
 
 import th07data as d
 
+READ_ERRORS = (pymem.exception.WinAPIError, pymem.exception.MemoryReadError)
 
 @dataclass(frozen=True)
 class GameState:
@@ -144,14 +145,20 @@ class TH07Reader:
 
     def prism_river(self, base: int | None = None) -> str | None:
         """通常3, 2枚目のスペルカードで相手にしているプリズムリバー姉妹。"""
-        base = self._ecl_base() if base is None else base
-        return d.PRISM_RIVER_ID_DIC.get(self.pm.read_int(base + d.PRISM_OFFSET))
+        try:
+            base = self._ecl_base() if base is None else base
+            return d.PRISM_RIVER_ID_DIC.get(self.pm.read_int(base + d.PRISM_OFFSET))
+        except READ_ERRORS:
+            return ''
 
     def hangoncho_flags(self, base: int | None = None) -> tuple:
         """thprac機能で反魂蝶までスキップした時の判定用 (v1..v5)。"""
-        base = self._ecl_base() if base is None else base
-        readers = {"short": self.pm.read_short, "int": self.pm.read_int}
-        return tuple(readers[kind](base + off) for off, kind in d.HANGONCHO_FIELDS)
+        try:
+            base = self._ecl_base() if base is None else base
+            readers = {"short": self.pm.read_short, "int": self.pm.read_int}
+            return tuple(readers[kind](base + off) for off, kind in d.HANGONCHO_FIELDS)
+        except READ_ERRORS:
+            return (0, 0, 0, 0, 0)
 
     # --- まとめて取得 ---
     def snapshot(self) -> GameState:

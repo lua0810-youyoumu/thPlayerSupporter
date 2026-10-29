@@ -72,6 +72,7 @@ def main() -> None:
     previous = None
     try:
         while True:
+            # s = reader.snapshot()
             try:
                 s = reader.snapshot()  # 難易度・キャラも毎回読む (別プレイに切替わっても追従)
             except READ_ERRORS:
@@ -111,7 +112,7 @@ def main() -> None:
                     log_file.flush()
                     previous = s
             else:
-                print(f"\033[H\033[J{s.title_menu_now}", flush=True)
+                print(f"\033[H\033[J Title menu:{s.title_menu_now}", flush=True)
 
             time.sleep(POLL_INTERVAL)
     except KeyboardInterrupt:
